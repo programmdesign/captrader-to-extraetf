@@ -15,14 +15,14 @@ Tool zur Konvertierung von CapTrader-Transaktionen (Cash, Trades) in ExtraETF-Im
 - **Anleihen** → Kurs in **% des Nominals**, Nominalwert als Anzahl
 - **Dividenden** → **brutto** mit zugeordneter **Quellensteuer** (netto = Preis − Steuern)
 - **Stornobuchungen** (`BUY (Ca.)`) → über die vorzeichenbehaftete Stückzahl korrekt gegengebucht
-- **Fremdwährungen** (USD/HKD/GBP/NOK/SEK/…) → `Wechselkurs` = Einheiten je EUR (= 1 / IB `FXRateToBase`)
+- **Fremdwährungen** → `Wechselkurs` = Einheiten je EUR (= 1 / IB `FXRateToBase`)
 - **Optionaler Bestandsabgleich:** mit hochgeladenem CapTrader-*Bestand* ergänzt der Konverter automatisch
   `Einbuchung` / `Ausbuchung`, damit die Positionen exakt dem Auszug entsprechen (z. B. bei Corporate Actions).
 
 ## Schnellstart
 
 1. `captrader-to-extraetf.html` im Browser öffnen (Doppelklick genügt – kein Server nötig).
-2. Die CapTrader-CSVs hineinziehen (Trades + Cash, optional den *Bestand*).
+2. CapTrader-CSVs hineinziehen (Trades + Cash, optional den *Bestand*).
 3. Vorschau und Hinweise prüfen.
 4. **„ExtraETF-Import-CSV herunterladen"** → `extraetf-import.csv`.
 5. In ExtraETF unter **Datenimport → CSV importieren** einlesen.
