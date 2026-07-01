@@ -1,15 +1,13 @@
 # CapTrader → ExtraETF Konverter
 
-Ein einzelnes, abhängigkeitsfreies HTML-Tool, das **CapTrader / Interactive-Brokers Flex-Query-Exporte**
-(Trades + Cash) in eine **ExtraETF-Import-CSV** umwandelt.
+Tool zur Konvertierung von CapTrader-Transaktionen (Cash, Trades) in ExtraETF-Import-CSV-Dateien.
 
-> 🔒 **Datenschutz:** Läuft vollständig lokal im Browser (HTML/JS, keine Abhängigkeiten, kein Server,
-> keine Netzwerkaufrufe). Es werden keinerlei Daten hochgeladen.
+> 🔒 **Datenschutz:** Läuft vollständig lokal im Browser – keine Abhängigkeiten, kein Server, keine
+> Netzwerkaufrufe, keine Uploads.
 >
-> ⚠️ **Kein offizielles Tool:** Dieses Projekt – der Konverter **und** der Claude-Code-Skill
-> (`.claude/skills/extraetf-import-ops/`) – steht in **keiner Verbindung** zu ExtraETF, CapTrader oder
-> Interactive Brokers und wird von diesen weder bereitgestellt noch unterstützt oder geprüft. Nutzung
-> **ohne Gewähr und auf eigenes Risiko** – die erzeugten Importe und Buchungen bitte selbst kontrollieren.
+> ⚠️ **Kein offizielles Tool:** Konverter und Claude-Code-Skill (`.claude/skills/extraetf-import-ops/`)
+> stehen in **keiner Verbindung** zu ExtraETF, CapTrader oder Interactive Brokers. Nutzung **ohne Gewähr
+> und auf eigenes Risiko** – erzeugte Importe und Buchungen bitte selbst kontrollieren.
 
 ## Was es kann
 
@@ -18,9 +16,8 @@ Ein einzelnes, abhängigkeitsfreies HTML-Tool, das **CapTrader / Interactive-Bro
 - **Dividenden** → **brutto** mit zugeordneter **Quellensteuer** (netto = Preis − Steuern)
 - **Stornobuchungen** (`BUY (Ca.)`) → über die vorzeichenbehaftete Stückzahl korrekt gegengebucht
 - **Fremdwährungen** (USD/HKD/GBP/NOK/SEK/…) → `Wechselkurs` = Einheiten je EUR (= 1 / IB `FXRateToBase`)
-- **Optionaler Bestandsabgleich:** lädst du zusätzlich den CapTrader-*Bestand* (Aktivitätsauszug) hoch,
-  ergänzt der Konverter automatisch `Einbuchung` / `Ausbuchung`, damit die Positionen exakt dem Auszug
-  entsprechen (z. B. bei Corporate Actions).
+- **Optionaler Bestandsabgleich:** mit hochgeladenem CapTrader-*Bestand* ergänzt der Konverter automatisch
+  `Einbuchung` / `Ausbuchung`, damit die Positionen exakt dem Auszug entsprechen (z. B. bei Corporate Actions).
 
 ## Schnellstart
 
@@ -33,33 +30,19 @@ Ein einzelnes, abhängigkeitsfreies HTML-Tool, das **CapTrader / Interactive-Bro
 ## Flex Queries in CapTrader einrichten
 
 Im CapTrader-/IB-Kundenportal unter **Berichte / Reporting → Flex Queries** zwei *Activity Flex Queries*
-anlegen – eine für **Trades**, eine für **Cash**. Den Zeitraum auf die gewünschte Historie setzen
-(benutzerdefinierter Bereich über die gesamte Kontolaufzeit **oder** pro Kalenderjahr – das Tool
-verarbeitet beliebig viele Dateien auf einmal).
+anlegen – eine für **Trades**, eine für **Cash**. Zeitraum frei wählbar (gesamte Kontolaufzeit oder pro
+Jahr; das Tool verarbeitet beliebig viele Dateien auf einmal).
 
-**Für beide Queries gleich:**
+Für **beide** Queries identisch:
 
-| Einstellung | Wert |
-|---|---|
-| Format | **CSV** |
-| Spaltenüberschriften miteinbeziehen? | **Ja** |
-| Überschrift/Trailer · Titelzeile · Abschnittscode · Prüfpfad · Tages-Aufschlüsselung | Nein |
-| Datumsformat / Zeitformat / Trennzeichen | **dd/MM/yyyy** · HH:mm:ss · Leerzeichen |
-| Include Offsetting Trade/Cancel Pairs? | Nein |
+- Format **CSV**, Spaltenüberschriften **Ja**
+- Datum **dd/MM/yyyy**, Zeit `HH:mm:ss`, Trennzeichen Leerzeichen
+- Überschrift/Trailer, Titelzeile, Abschnittscode, Prüfpfad, Tages-Aufschlüsselung, Offsetting-/Cancel-Paare: **Nein**
 
-**Unterschiede:**
+Unterschiede:
 
-| | Trades-Query | Cash-Query |
-|---|---|---|
-| Abschnitt | `Trades` | `Bartransaktionen` (Cash Transactions) |
-| Wechselkurse miteinbeziehen? | Nein | **Ja** |
-
-- **Trades-Spalten:** `CurrencyPrimary, FXRateToBase, AssetClass, Symbol, Description, ISIN,
-  ListingExchange, TradeDate, Exchange, Quantity, TradePrice, Taxes, IBCommission, IBCommissionCurrency, Buy/Sell`.
-- **Cash-Datei** ist mehrteilig: zuerst *Bartransaktionen*
-  (`…,Symbol,Description,Date/Time,SettleDate,Amount,Type`), danach eine Wechselkurstabelle
-  (`Date/Time,FromCurrency,ToCurrency,Rate`). Der Konverter erkennt beide Abschnitte automatisch und
-  nutzt nur die Bartransaktionen.
+- **Trades-Query:** Abschnitt `Trades`, Wechselkurse **Nein**
+- **Cash-Query:** Abschnitt `Bartransaktionen`, Wechselkurse **Ja**
 
 ## Import in ExtraETF
 
