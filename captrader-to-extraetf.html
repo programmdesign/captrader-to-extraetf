@@ -69,6 +69,17 @@
   </footer>
 </div>
 
+<!-- Render-Templates: HTML-Markup lebt hier (nicht im JS); Daten werden per textContent gefüllt → keine HTML-Strings im JS, kein XSS. -->
+<div hidden aria-hidden="true">
+  <template id="t-file"><li class="file"><span class="badge"></span><span class="fname"></span><button class="rm" type="button" aria-label="Entfernen">×</button></li></template>
+  <template id="t-stat"><div class="stat"><div class="n"></div><div class="l"></div></div></template>
+  <template id="t-banner"><div class="banner"></div></template>
+  <template id="t-prow"><tr><td></td><td></td><td></td><td><span class="pill"></span></td><td></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td></td><td class="num"></td></tr></template>
+  <template id="t-posrow"><tr><td></td><td></td><td><span class="pill"></span></td><td class="num"></td></tr></template>
+  <template id="t-note"><details class="card"><summary></summary><div class="tablewrap"><table><thead></thead><tbody></tbody></table></div></details></template>
+  <template id="t-cash-intro"><p style="margin-top:0">Diese Buchungen lassen sich in ExtraETF <b>nicht per CSV</b> importieren. Erfasse sie bei Bedarf manuell über <b>„Neue Aktivität → Cash“</b> (<a href="https://support.extraetf.com/hc/de/articles/14644488296476" target="_blank" rel="noopener">Anleitung</a>) und aktiviere „Berücksichtigen“, damit Cash zum Gesamtvermögen zählt. <b>Anleihe-Kupons</b> bucht man am besten als <em>Dividende auf die jeweilige Anleihe</em> (ExtraETF hat keinen Kupon-Typ).</p></template>
+</div>
+
 <script src="converter.js"></script>
 </body>
 </html>

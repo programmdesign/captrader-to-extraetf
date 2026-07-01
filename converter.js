@@ -294,9 +294,16 @@ function toCSV(rows){
 
 /* ============================ UI rendering ============================ */
 const $ = id => document.getElementById(id);
-const esc = s => ("" + (s == null ? "" : s)).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 const pillCls = typ => "pill " + ("" + typ).replace(/[^A-Za-z]/g, "");
 let RESULT = null;
+
+/* DOM-Builder: Markup lebt in <template>s, Daten kommen per textContent rein (keine HTML-Strings, kein XSS). */
+const tpl    = id => document.getElementById(id).content.firstElementChild.cloneNode(true);
+const cell   = (text, num) => { const td = document.createElement("td"); if(num) td.className = "num"; td.textContent = (text == null ? "" : text); return td; };
+const rowOf  = cells => { const tr = document.createElement("tr"); for(const c of cells) tr.appendChild(c); return tr; };
+const headOf = cols => { const tr = document.createElement("tr"); for(const c of cols){ const th = document.createElement("th"); if(c && c.num){ th.className = "num"; th.textContent = c.t; } else th.textContent = c; tr.appendChild(th); } return tr; };
+const bold   = text => { const b = document.createElement("b"); b.textContent = text; return b; };
+const banner = (kind, build) => { const b = tpl("t-banner"); b.classList.add(kind); build(b); return b; };
 
 const KIND_LABEL = { trade: "Trades", cash: "Cash", bestand: "Bestand", unknown: "?" };
 const CASH_LABELS = {
@@ -328,10 +335,14 @@ function refresh(){
 }
 
 function renderFiles(){
-  $("fileList").innerHTML = store.files.map((f, i) =>
-    `<li class="file"><span class="badge ${f.kind}">${KIND_LABEL[f.kind] || "?"}</span>` +
-    `<span class="fname" title="${esc(f.name)}">${esc(f.name)}</span>` +
-    `<button class="rm" data-i="${i}" aria-label="Entfernen">×</button></li>`).join("");
+  $("fileList").replaceChildren(...store.files.map((f, i) => {
+    const li = tpl("t-file");
+    const badge = li.querySelector(".badge");
+    badge.textContent = KIND_LABEL[f.kind] || "?"; badge.classList.add(f.kind);
+    const fn = li.querySelector(".fname"); fn.textContent = f.name; fn.title = f.name;
+    li.querySelector(".rm").dataset.i = i;
+    return li;
+  }));
 }
 
 function render(){
@@ -348,75 +359,97 @@ function render(){
     ["Dividenden", count("Dividende")], ["Offene Positionen", openPos]
   ];
   if(store.bestand) stats.push(["Bestand-Abgleich", balAdds.length]);
-  $("summary").innerHTML = stats.map(([l,n]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+  $("summary").replaceChildren(...stats.map(([l, n]) => {
+    const c = tpl("t-stat"); c.querySelector(".n").textContent = n; c.querySelector(".l").textContent = l; return c;
+  }));
 
   /* reconcile banner */
-  let rec = "";
-  if(store.bestand){
-    rec = balAdds.length
-      ? `<div class="banner good"><b>✅ Bestand-Abgleich</b> — ${balAdds.length} Ausgleichsbuchung(en) zum ${esc(store.bestand.date)} ergänzt, damit die Positionen exakt dem CapTrader-Bestand entsprechen (Corporate Actions / fehlende Trades).</div>`
-      : `<div class="banner good"><b>✅ Bestand-Abgleich</b> — alle Positionen stimmen exakt mit dem CapTrader-Bestand (${esc(store.bestand.date)}) überein.</div>`;
-  } else {
-    rec = `<div class="banner warn"><b>Tipp:</b> Lade zusätzlich den CapTrader-<b>Bestand</b> hoch – dann ergänzt der Konverter automatisch Ein-/Ausbuchungen für Corporate Actions, sodass die Positionen exakt passen.</div>`;
-  }
-  $("reconcile").innerHTML = rec;
+  $("reconcile").replaceChildren(store.bestand
+    ? banner("good", b => b.append(bold("✅ Bestand-Abgleich"), balAdds.length
+        ? ` — ${balAdds.length} Ausgleichsbuchung(en) zum ${store.bestand.date} ergänzt, damit die Positionen exakt dem CapTrader-Bestand entsprechen (Corporate Actions / fehlende Trades).`
+        : ` — alle Positionen stimmen exakt mit dem CapTrader-Bestand (${store.bestand.date}) überein.`))
+    : banner("warn", b => b.append(bold("Tipp:"), " Lade zusätzlich den CapTrader-", bold("Bestand"),
+        " hoch – dann ergänzt der Konverter automatisch Ein-/Ausbuchungen für Corporate Actions, sodass die Positionen exakt passen.")));
 
   /* preview table */
-  $("preview").querySelector("thead").innerHTML = "<tr>" + HEADER.map(h => `<th>${h}</th>`).join("") + "</tr>";
-  $("preview").querySelector("tbody").innerHTML = outRows.map(r =>
-    `<tr class="${r._bal ? "bal" : ""}"><td>${esc(r.d)}</td><td>${esc(r.isin)}</td><td>${esc(r.name)}</td>` +
-    `<td><span class="${pillCls(r.typ)}">${esc(r.typ)}</span></td><td>${esc(r.tx)}</td>` +
-    `<td class="num">${esc(r.preis)}</td><td class="num">${esc(r.anzahl)}</td><td class="num">${esc(r.geb)}</td>` +
-    `<td class="num">${esc(r.st)}</td><td>${esc(r.ccy)}</td><td class="num">${esc(r.wk)}</td></tr>`).join("");
+  $("preview").querySelector("thead").replaceChildren(headOf(HEADER));
+  $("preview").querySelector("tbody").replaceChildren(...outRows.map(r => {
+    const tr = tpl("t-prow"); if(r._bal) tr.classList.add("bal");
+    const c = tr.children;
+    c[0].textContent = r.d; c[1].textContent = r.isin; c[2].textContent = r.name;
+    const pill = c[3].querySelector(".pill"); pill.textContent = r.typ; pill.className = pillCls(r.typ);
+    c[4].textContent = r.tx; c[5].textContent = r.preis; c[6].textContent = r.anzahl;
+    c[7].textContent = r.geb; c[8].textContent = r.st; c[9].textContent = r.ccy; c[10].textContent = r.wk;
+    return tr;
+  }));
   $("rowcount").textContent = `· ${outRows.length} Zeilen`;
 
   /* positions table */
   const pos = Object.entries(positions).filter(([,p]) => Math.abs(p.qty) > 1e-6)
     .sort((a,b) => a[1].name.localeCompare(b[1].name));
-  $("positions").querySelector("thead").innerHTML = "<tr><th>ISIN</th><th>Name</th><th>Typ</th><th class='num'>Netto-Stück</th></tr>";
-  $("positions").querySelector("tbody").innerHTML = pos.map(([isin,p]) =>
-    `<tr><td>${esc(isin)}</td><td>${esc(p.name)}</td><td><span class="${pillCls(p.typ)}">${esc(p.typ)}</span></td>` +
-    `<td class="num">${fmt(p.qty)}</td></tr>`).join("");
+  $("positions").querySelector("thead").replaceChildren(headOf(["ISIN", "Name", "Typ", { t: "Netto-Stück", num: true }]));
+  $("positions").querySelector("tbody").replaceChildren(...pos.map(([isin, p]) => {
+    const tr = tpl("t-posrow"); const c = tr.children;
+    c[0].textContent = isin; c[1].textContent = p.name;
+    const pill = c[2].querySelector(".pill"); pill.textContent = p.typ; pill.className = pillCls(p.typ);
+    c[3].textContent = fmt(p.qty);
+    return tr;
+  }));
 
   /* notes / flags */
-  const block = (title, cls, items, cols, fn) => items.length
-    ? `<details class="card"><summary>${title} <span class="cnt">${items.length}</span></summary>` +
-      `<div class="tablewrap"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead>` +
-      `<tbody>${items.map(fn).join("")}</tbody></table></div></details>` : "";
-  let fh = "";
-  if(balAdds.length) fh += `<details class="card"><summary>Bestand-Ausgleichsbuchungen <span class="cnt">${balAdds.length}</span></summary>` +
-    `<div class="tablewrap"><table><thead><tr><th>ISIN</th><th>Name</th><th>Buchung</th><th class="num">Stück</th><th class="num">rekonstr.→Ziel</th></tr></thead><tbody>` +
-    balAdds.map(b => `<tr><td>${esc(b.isin)}</td><td>${esc(b.name)}</td><td>${b.resid>0?"Einbuchung":"Ausbuchung"}</td>` +
-      `<td class="num">${fmt(Math.abs(b.resid))}</td><td class="num">${fmt(b.have)} → ${fmt(b.want)}</td></tr>`).join("") +
-    `</tbody></table></div></details>`;
-  fh += block("⚠︎ Corporate Actions / 0-Preis – in ExtraETF manuell prüfen", "", flags.corp,
-    ["Datum","Symbol","ISIN","Anzahl","Beschreibung"],
-    t => `<tr><td>${deDate(t.TradeDate)}</td><td>${esc(t.Symbol)}</td><td>${esc(t.ISIN)}</td><td class="num">${esc(t.Quantity)}</td><td>${esc(t.Description)}</td></tr>`);
-  fh += block("Währungsumrechnungen (keine Wertpapiere)", "", flags.fx,
-    ["Datum","Paar","Anzahl","Kurs","Richtung"],
-    t => `<tr><td>${deDate(t.TradeDate)}</td><td>${esc(t.Symbol)}</td><td class="num">${esc(t.Quantity)}</td><td class="num">${esc(t.TradePrice)}</td><td>${esc(t["Buy/Sell"])}</td></tr>`);
-  fh += block("Übersprungen (fehlende ISIN/Werte)", "", flags.skipped,
-    ["Beschreibung","ISIN"],
-    t => `<tr><td>${esc(t.note||t.Description||"")}</td><td>${esc(t.ISIN||"")}</td></tr>`);
-  fh += block("Quellensteuer ohne passende Dividende", "", flags.unmatchedTax,
-    ["Datum | ISIN","Betrag"],
-    t => `<tr><td>${esc(t.k)}</td><td class="num">${fmt(t.amt)}</td></tr>`);
-  if(flags.nCanc) fh += `<div class="banner good"><b>${flags.nCanc} Stornierung(en) „(Ca.)“</b> erkannt – anhand der vorzeichenbehafteten Stückzahl korrekt gegengebucht.</div>`;
-  $("flags").innerHTML = fh ? `<div class="step-head" style="margin-top:22px">Hinweise</div>${fh}` : "";
+  const note = (title, items, cols, rowFn) => {
+    if(!items.length) return null;
+    const d = tpl("t-note");
+    const s = d.querySelector("summary"); s.textContent = title + " ";
+    const cnt = document.createElement("span"); cnt.className = "cnt"; cnt.textContent = items.length; s.appendChild(cnt);
+    d.querySelector("thead").replaceChildren(headOf(cols));
+    d.querySelector("tbody").replaceChildren(...items.map(it => rowOf(rowFn(it))));
+    return d;
+  };
+  const notes = [];
+  if(balAdds.length) notes.push(note("Bestand-Ausgleichsbuchungen", balAdds,
+    ["ISIN", "Name", "Buchung", { t: "Stück", num: true }, { t: "rekonstr.→Ziel", num: true }],
+    b => [cell(b.isin), cell(b.name), cell(b.resid > 0 ? "Einbuchung" : "Ausbuchung"),
+          cell(fmt(Math.abs(b.resid)), true), cell(`${fmt(b.have)} → ${fmt(b.want)}`, true)]));
+  notes.push(note("⚠︎ Corporate Actions / 0-Preis – in ExtraETF manuell prüfen", flags.corp,
+    ["Datum", "Symbol", "ISIN", "Anzahl", "Beschreibung"],
+    t => [cell(deDate(t.TradeDate)), cell(t.Symbol), cell(t.ISIN), cell(t.Quantity, true), cell(t.Description)]));
+  notes.push(note("Währungsumrechnungen (keine Wertpapiere)", flags.fx,
+    ["Datum", "Paar", "Anzahl", "Kurs", "Richtung"],
+    t => [cell(deDate(t.TradeDate)), cell(t.Symbol), cell(t.Quantity, true), cell(t.TradePrice, true), cell(t["Buy/Sell"])]));
+  notes.push(note("Übersprungen (fehlende ISIN/Werte)", flags.skipped,
+    ["Beschreibung", "ISIN"],
+    t => [cell(t.note || t.Description || ""), cell(t.ISIN || "")]));
+  notes.push(note("Quellensteuer ohne passende Dividende", flags.unmatchedTax,
+    ["Datum | ISIN", "Betrag"],
+    t => [cell(t.k), cell(fmt(t.amt), true)]));
+  if(flags.nCanc) notes.push(banner("good", b => b.append(
+    bold(`${flags.nCanc} Stornierung(en) „(Ca.)“`),
+    " erkannt – anhand der vorzeichenbehafteten Stückzahl korrekt gegengebucht.")));
+  const shown = notes.filter(Boolean);
+  if(shown.length){
+    const head = document.createElement("div");
+    head.className = "step-head"; head.style.marginTop = "22px"; head.textContent = "Hinweise";
+    $("flags").replaceChildren(head, ...shown);
+  } else $("flags").replaceChildren();
 
   /* cash summary */
   const keys = Object.keys(cashSummary).sort((a,b) => (CASH_ORDER.indexOf(a)+99) - (CASH_ORDER.indexOf(b)+99));
-  let ch = `<p style="margin-top:0">Diese Buchungen lassen sich in ExtraETF <b>nicht per CSV</b> importieren. Erfasse sie bei Bedarf manuell über <b>„Neue Aktivität → Cash“</b> ` +
-    `(<a href="https://support.extraetf.com/hc/de/articles/14644488296476" target="_blank" rel="noopener">Anleitung</a>) und aktiviere „Berücksichtigen“, damit Cash zum Gesamtvermögen zählt. ` +
-    `<b>Anleihe-Kupons</b> bucht man am besten als <em>Dividende auf die jeweilige Anleihe</em> (ExtraETF hat keinen Kupon-Typ).</p>`;
+  const box = $("cashbox"); box.replaceChildren(tpl("t-cash-intro"));
   if(keys.length){
-    ch += `<div class="tablewrap"><table><thead><tr><th>Buchungsart</th><th>Beträge je Währung</th></tr></thead><tbody>` +
-      keys.map(k => {
-        const parts = Object.entries(cashSummary[k].ccy).map(([c,v]) => `${fmt(Math.round(v*100)/100)} ${c}`).join(" · ");
-        return `<tr><td>${esc(CASH_LABELS[k] || k)}</td><td class="num">${parts}</td></tr>`;
-      }).join("") + `</tbody></table></div>`;
-  } else ch += `<p class="muted">Keine Cash-Buchungen gefunden.</p>`;
-  $("cashbox").innerHTML = ch;
+    const wrap = document.createElement("div"); wrap.className = "tablewrap";
+    const table = document.createElement("table");
+    const thead = document.createElement("thead"); thead.appendChild(headOf(["Buchungsart", "Beträge je Währung"]));
+    const tbody = document.createElement("tbody");
+    for(const k of keys){
+      const parts = Object.entries(cashSummary[k].ccy).map(([c, v]) => `${fmt(Math.round(v*100)/100)} ${c}`).join(" · ");
+      tbody.appendChild(rowOf([cell(CASH_LABELS[k] || k), cell(parts, true)]));
+    }
+    table.append(thead, tbody); wrap.appendChild(table); box.appendChild(wrap);
+  } else {
+    const p = document.createElement("p"); p.className = "muted"; p.textContent = "Keine Cash-Buchungen gefunden.";
+    box.appendChild(p);
+  }
 
   $("downloadBtn").disabled = outRows.length === 0;
   $("rowInfo").textContent = outRows.length ? `· ${outRows.length} Zeilen` : "";
