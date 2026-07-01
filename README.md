@@ -5,7 +5,7 @@ Tool zur Konvertierung von CapTrader-Transaktionen (Cash, Trades) in ExtraETF-Im
 > 🔒 **Datenschutz:** Läuft vollständig lokal im Browser – keine Abhängigkeiten, kein Server, keine
 > Netzwerkaufrufe, keine Uploads.
 >
-> ⚠️ **Kein offizielles Tool:** Konverter und Claude-Code-Skill (`.claude/skills/extraetf-import-ops/`)
+> ⚠️ **Kein offizielles Tool:** Konverter und [Claude-Code-Skill](`.claude/skills/extraetf-import-ops/`)
 > stehen in **keiner Verbindung** zu ExtraETF, CapTrader oder Interactive Brokers. Nutzung **ohne Gewähr
 > und auf eigenes Risiko** – erzeugte Importe und Buchungen bitte selbst kontrollieren.
 
@@ -15,7 +15,7 @@ Tool zur Konvertierung von CapTrader-Transaktionen (Cash, Trades) in ExtraETF-Im
 - **Anleihen** → Kurs in **% des Nominals**, Nominalwert als Anzahl
 - **Dividenden** → **brutto** mit zugeordneter **Quellensteuer** (netto = Preis − Steuern)
 - **Stornobuchungen** (`BUY (Ca.)`) → über die vorzeichenbehaftete Stückzahl korrekt gegengebucht
-- **Fremdwährungen** → `Wechselkurs` = Einheiten je EUR (= 1 / IB `FXRateToBase`)
+- **Fremdwährungen** → `Wechselkurs` = Einheiten je EUR (= 1 / `FXRateToBase`)
 - **Optionaler Bestandsabgleich:** mit hochgeladenem CapTrader-*Bestand* ergänzt der Konverter automatisch
   `Einbuchung` / `Ausbuchung`, damit die Positionen exakt dem Auszug entsprechen (z. B. bei Corporate Actions).
 
@@ -35,9 +35,11 @@ Jahr; das Tool verarbeitet beliebig viele Dateien auf einmal).
 
 Für **beide** Queries identisch:
 
-- Format **CSV**, Spaltenüberschriften **Ja**
-- Datum **dd/MM/yyyy**, Zeit `HH:mm:ss`, Trennzeichen Leerzeichen
-- Überschrift/Trailer, Titelzeile, Abschnittscode, Prüfpfad, Tages-Aufschlüsselung, Offsetting-/Cancel-Paare: **Nein**
+- Format **CSV**
+- Spaltenüberschriften **Ja**
+- Datum **dd/MM/yyyy**
+- Zeit `HH:mm:ss`
+- Trennzeichen Leerzeichen, Überschrift/Trailer, Titelzeile, Abschnittscode, Prüfpfad, Tages-Aufschlüsselung, Offsetting-/Cancel-Paare: **Nein**
 
 Unterschiede:
 
@@ -46,7 +48,7 @@ Unterschiede:
 
 ## Manuell nachzupflegen
 
-ExtraETF importiert per CSV nur **Wertpapier-Transaktionen**. Reine Cash-Bewegungen listet der Konverter
+ExtraETF importiert nur **Wertpapier-Transaktionen**. Reine Cash-Bewegungen listet der Konverter
 unter **„Cash / Kontobuchungen"**; sie werden über **„Neue Aktivität → Cash"** erfasst (und je Konto
 „Berücksichtigen" aktivieren, damit Cash zum Gesamtvermögen zählt):
 
