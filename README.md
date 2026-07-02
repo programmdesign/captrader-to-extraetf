@@ -33,15 +33,15 @@ Verlässlicher ist der manuelle Export als *Flex-Query*-CSV, dessen Format aber 
 ### Flex Queries in CapTrader einrichten
 
 Im CapTrader-/IB-Kundenportal unter `Berichte → Flex Queries` zwei Flex-Queries z. B. mit folgenden Namen anlegen:
-  - *ExtraETF*: Abschnitt 'Trades' aktivieren
-  - *ExtraETF (Cash)*: Abschnitt 'Bartransaktionen' aktivieren
+  - `ExtraETF`: Abschnitt 'Trades' aktivieren
+  - `ExtraETF (Cash)`: Abschnitt 'Bartransaktionen' aktivieren
 
 Beide Queries werden identisch konfiguriert – **bis auf die Wechselkurse**.
 
 **Felder (Spalten)** – beim Anlegen der Query je Abschnitt mindestens diese Felder auswählen:
 
 | Feld | Trade-Query | Cash-Query |
-| :--- | :--- | :--- |
+| :--- | :---: | :---: |
 | `CurrencyPrimary` | ✓ | ✓ |
 | `FXRateToBase` | ✓ | ✓ |
 | `AssetClass` | ✓ | |
