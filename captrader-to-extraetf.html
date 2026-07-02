@@ -14,24 +14,27 @@
     <p class="lede">Wandelt deine CapTrader / Interactive-Brokers <strong>Flex-Query-Exporte</strong> (Trades&nbsp;+&nbsp;Cash) in eine
       <strong>ExtraETF-Import-CSV</strong> um – inkl. Aktien, ETFs, Anleihen (Kurs&nbsp;in&nbsp;%), Dividenden netto&nbsp;nach&nbsp;Steuern,
       Fremdwährungen und Stornobuchungen.</p>
-    <span class="privacy">🔒 Läuft komplett lokal im Browser – es werden keine Daten hochgeladen.</span>
-    <p class="disclaimer">⚠️ <strong>Kein offizielles Tool:</strong> steht in keiner Verbindung zu ExtraETF, CapTrader oder Interactive&nbsp;Brokers und wird von diesen nicht unterstützt oder geprüft. Nutzung ohne Gewähr und auf eigenes Risiko – erzeugte Importe bitte selbst kontrollieren.</p>
   </header>
 
   <!-- STEP 1 — upload -->
   <section>
-    <div class="step-head"><span class="step-num">1</span> Dateien wählen</div>
     <div id="drop" class="dropzone" tabindex="0" role="button" aria-label="CSV-Dateien auswählen oder hierher ziehen">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
       </svg>
-      <div class="dz-title"><span class="link">Dateien auswählen</span> oder hierher ziehen</div>
+      <span class="dz-btn">Dateien auswählen</span>
+      <div class="dz-or">oder hierher ziehen</div>
       <div class="dz-hint">Trades <code>…ExtraETF.csv</code> · Cash <code>…(Cash).csv</code> · optional der <strong>Bestand</strong> <code>U…_JJJJMMTT.csv</code> für den automatischen Positionsabgleich</div>
       <input id="file" type="file" accept=".csv,text/csv" multiple hidden>
     </div>
     <ul id="fileList" class="filelist" aria-live="polite"></ul>
     <p id="err" class="err" role="alert"></p>
   </section>
+
+  <div class="notice">
+    <p><svg class="ico ico-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> Läuft komplett lokal im Browser – es werden keine Daten hochgeladen.</p>
+    <p><svg class="ico ico-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <strong>Kein offizielles Tool</strong> von ExtraETF, CapTrader oder Interactive&nbsp;Brokers. Nutzung ohne Gewähr, auf eigenes Risiko.</p>
+  </div>
 
   <!-- STEP 2 — results -->
   <section id="results" class="hidden">
@@ -42,7 +45,7 @@
 
     <div id="reconcile"></div>
 
-    <div class="step-head"><span class="step-num">2</span> Zusammenfassung</div>
+    <div class="step-head">Zusammenfassung</div>
     <div id="summary" class="stats"></div>
 
     <details class="card" id="secPreview" open>
@@ -63,10 +66,29 @@
     </details>
   </section>
 
+  <section class="howto">
+    <h2>So funktioniert's</h2>
+    <ol class="steps">
+      <li>
+        <div class="step-badge">1</div>
+        <h3>Flex-Queries<sup>1</sup> und Bestand auf CapTrader exportieren</h3>
+        <p>Im CapTrader-Portal die Flex-Queries (Trades&nbsp;+&nbsp;Cash) und optional den Bestand als CSV exportieren.</p>
+      </li>
+      <li>
+        <div class="step-badge">2</div>
+        <h3>Dateien hier hochladen</h3>
+        <p>Die CSV-Dateien oben auswählen oder ins Feld ziehen – alles bleibt lokal im Browser.</p>
+      </li>
+      <li>
+        <div class="step-badge">3</div>
+        <h3>ExtraETF-Import starten</h3>
+        <p>Vorschau prüfen, die ExtraETF-Import-CSV herunterladen und in ExtraETF unter „Datenimport → CSV&nbsp;importieren“ einlesen.</p>
+      </li>
+    </ol>
+  </section>
+
   <footer>
-    <p><strong>Flex-Query-Einrichtung &amp; Nutzung:</strong> siehe die <a href="https://github.com/programmdesign/captrader-to-extraetf#readme" target="_blank" rel="noopener"><code>README.md</code></a> im Repository. Kurz: zwei Flex&nbsp;Queries anlegen
-      (<em>ExtraETF</em> → Abschnitt <em>Trades</em>, CSV; <em>ExtraETF&nbsp;(Cash)</em> → Abschnitt <em>Bartransaktionen</em>, CSV, mit Spaltenüberschriften),
-      hier hochladen, Vorschau prüfen, herunterladen und in ExtraETF unter <em>Datenimport → CSV&nbsp;importieren</em> einlesen.</p>
+    <p>1. Flex-Query-Einrichtung &amp; Nutzung: siehe die <a href="https://github.com/programmdesign/captrader-to-extraetf#readme" target="_blank" rel="noopener"><code>README.md</code></a>.</p>
   </footer>
 </div>
 

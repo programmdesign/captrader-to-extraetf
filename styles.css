@@ -25,13 +25,14 @@
        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans",sans-serif;}
   .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 96px}
   a{color:var(--accent)}
-  h1{font-size:24px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
-  .lede{color:var(--muted);margin:0 0 14px;max-width:70ch}
-  .privacy{display:inline-flex;gap:7px;align-items:center;font-size:13px;color:var(--good);
-           background:var(--good-bg);border:1px solid var(--good-bd);border-radius:999px;padding:4px 12px}
-  .disclaimer{margin:10px 0 0;font-size:12.5px;color:var(--warn);background:var(--warn-bg);
-              border:1px solid var(--warn-bd);border-radius:10px;padding:8px 12px;max-width:70ch}
-  .disclaimer strong{font-weight:650}
+  h1{font-size:30px;line-height:1.2;margin:0 0 8px;letter-spacing:-.02em}
+  .lede{color:var(--muted);margin:0 0 16px;max-width:64ch;font-size:16px}
+  .notice{margin:20px auto 0;max-width:900px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.55}
+  .notice p{margin:6px 0}
+  .notice .ico{width:15px;height:15px;vertical-align:-2px;margin-right:4px}
+  .notice .ico-shield{color:var(--good)}
+  .notice .ico-warn{color:var(--warn)}
+  .notice strong{font-weight:650;color:var(--text)}
 
   section{margin-top:26px}
   .step-head{display:flex;align-items:center;gap:10px;font-weight:650;font-size:16px;margin:0 0 12px}
@@ -42,13 +43,18 @@
   .card.pad{padding:18px 20px}
 
   /* ------------- dropzone ------------- */
-  .dropzone{border:2px dashed var(--border);border-radius:var(--radius);background:var(--surface);
-            padding:34px 22px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
-  .dropzone:hover,.dropzone:focus-visible{border-color:var(--accent);background:var(--accent-weak);outline:none}
-  .dropzone.hot{border-color:var(--accent);background:var(--accent-weak)}
-  .dropzone .dz-title{font-size:16px;font-weight:600}
-  .dropzone .dz-hint{color:var(--muted);font-size:13px;margin-top:8px}
-  .dropzone svg{width:34px;height:34px;color:var(--accent);margin-bottom:6px}
+  .dropzone{border:2px dashed var(--border);border-radius:16px;
+            background:linear-gradient(180deg,var(--surface),var(--surface-2));
+            padding:52px 24px;text-align:center;cursor:pointer;box-shadow:var(--shadow);
+            transition:border-color .15s,background .15s,box-shadow .15s}
+  .dropzone:hover,.dropzone:focus-visible,.dropzone.hot{border-color:var(--accent);
+            background:var(--accent-weak);outline:none;box-shadow:0 8px 24px rgba(37,99,235,.13)}
+  .dropzone svg{display:block;width:46px;height:46px;color:var(--accent);margin:0 auto 14px}
+  .dz-btn{display:inline-block;background:var(--accent);color:var(--accent-ink);font-weight:650;
+          font-size:15px;padding:11px 22px;border-radius:10px}
+  .dropzone:hover .dz-btn,.dropzone:focus-visible .dz-btn,.dropzone.hot .dz-btn{filter:brightness(1.06)}
+  .dz-or{font-size:14px;color:var(--muted);margin-top:12px}
+  .dropzone .dz-hint{color:var(--faint);font-size:12.5px;margin-top:14px;max-width:52ch;margin-left:auto;margin-right:auto}
   .link{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
 
   /* ------------- file list ------------- */
@@ -117,3 +123,13 @@
   .muted{color:var(--muted)}
   .hidden{display:none}
   footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+
+  /* ------------- how-to steps ------------- */
+  .howto{margin-top:44px}
+  .howto h2{font-size:20px;text-align:center;margin:0 0 22px;letter-spacing:-.01em}
+  .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .steps li{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+  .steps .step-badge{display:grid;place-items:center;width:32px;height:32px;border-radius:999px;
+                     background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:15px;margin-bottom:12px}
+  .steps h3{font-size:15px;margin:0 0 6px;font-weight:650}
+  .steps p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
