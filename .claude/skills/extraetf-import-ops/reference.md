@@ -17,7 +17,7 @@ Read `SKILL.md` first for the ground rules and durable method.
 
 ## Field IDs
 **Cash form** (the "+" → Cash tab): `#inp_tx_date` (native `type=date`, set ISO `YYYY-MM-DD`),
-`#inp_tx_amount` (Betrag — masked, real keystrokes), `#inp_tx_comment` (Kommentar, under "Mehr Optionen").
+`#inp_tx_amount` (Betrag — masked; set via `browser_type`/`.fill()` + Enter to submit, NOT native JS value-set), `#inp_tx_comment` (Kommentar, under "Mehr Optionen").
 **Securities form** (Wertpapier tab): `#inp_investment_search`, `#inp_booking_date`,
 `#inp_booking_number_of_lots` (Anzahl), `#inp_booking_entry_quote` (Kurs), `#inp_booking_amount` (auto),
 `#inp_booking_commission`, `#inp_booking_tax_amount`, `#inp_booking_comment`.
@@ -35,15 +35,51 @@ Read `SKILL.md` first for the ground rules and durable method.
 - Modal close (X) = `[data-testid="modal_close_button"]`.
 
 ## Booking a cash entry
-1. `[+]` (`button[name="Neue Aktivität"]`). Dialog opens on **Wertpapiere** and closes after each Speichern.
-2. Click the **Cash** tab: `button:text-is("Cash")` (real click).
-3. TYP dropdown values: **Gutschrift (+)**, **Abbuchung (−)**, **Zinsen/Gebühren** (signed net: positive credit,
-   negative debit; adds a Steuern field), **Steuererstattung**, **Dividenden**. Change it by clicking the trigger
-   (`button` showing the current type) then the `.dropdown-item`.
-4. Set `#inp_tx_date` (native-set ISO) and `#inp_tx_comment` (native-set; expand "Mehr Optionen" first), then
-   **type** `#inp_tx_amount` with real keystrokes (German decimals; leading `-` allowed for Zinsen/Gebühren).
-5. Read back TYP/date/amount/comment, then **Speichern** (`button:text-is("Speichern")`). Verify the
-   Verrechnungskonto on `/de/accounts` after.
+`[+]` (`button[name="Neue Aktivität"]`) opens the dialog on **Wertpapiere**; it closes after each Speichern, so every
+booking reopens it. TYP values: **Gutschrift (+)**, **Abbuchung (−)**, **Zinsen/Gebühren** (signed net: positive
+credit, negative debit; adds a Steuern field), **Steuererstattung**, **Dividenden**.
+
+**Fast path — ~2 tool calls/booking (verified 2026-07 over a 28-entry batch):**
+1. **One `browser_evaluate`** (snippet below): fire `+` → wait for `.cdk-overlay-container` → **switch to Cash with a
+   *synthetic* click on the tab _inside the overlay_** (bbox y≈210–330). There are two "Cash" elements — the page's
+   own Cash tab is a no-op, which is why a naive synthetic click appears to "not switch". Then wait for
+   `#inp_tx_amount` → set TYP (fire the trigger `button`, then the matching `.dropdown-item`) → expand "Mehr
+   Optionen" → native-set `#inp_tx_date` (ISO) + `#inp_tx_comment` → clear + focus `#inp_tx_amount`. **Return the
+   resolved TYP/date so you can verify before typing** — a wrong TYP silently flips the sign on Abbuchung/Zinsen.
+2. **`browser_type` `#inp_tx_amount` = amount, `submit:true`** — Enter saves & closes (or click
+   `button:text-is("Speichern")`). `browser_type`'s default `.fill()` DOES register on the masked field (formats to
+   e.g. `25.000`); no `slowly`/pressSequentially needed. German comma decimals (`262,57`); enter the POSITIVE amount
+   for Abbuchung (the TYP carries the −); a leading `-` is allowed for a negative Zinsen/Gebühren net.
+3. Per batch/year, re-read the drift-free **Verrechnungskonto on `/de/accounts`** and confirm it moved by the sum booked.
+
+_Refines SKILL.md ground-rule #4:_ the **dialog** Cash tab **does** switch via synthetic click (target the overlay
+tab), and the masked amount registers via `browser_type`/`.fill()` — only the *page* Cash tab and *native JS*
+value-set fail. Fallback if the synthetic tab click ever stops working: `browser_click` `button:text-is("Cash")`
+scoped to the overlay, then a second evaluate for TYP/date/comment.
+
+```js
+// One evaluate: open dialog + Cash tab + TYP/date/comment + focus amount. Then browser_type the amount (submit:true).
+async () => {
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const waitFor=async(fn,t=4500)=>{const s=Date.now();while(Date.now()-s<t){const el=fn();if(el)return el;await sleep(70);}return null;};
+  const fire=el=>{for(const t of ['pointerdown','mousedown','mouseup','click'])el.dispatchEvent(new MouseEvent(t,{bubbles:true,cancelable:true,view:window}));};
+  const set=(el,v)=>{const p=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(p,'value').set.call(el,v);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));};
+  const DATE='2024-05-30', CMT='Auszahlung', TYP=/^Abbuchung/;   // ← per booking; TYP ∈ /^Gutschrift/ | /^Abbuchung/ | /^Zinsen/
+  fire(document.querySelector('app-header button[name="Neue Aktivität"]')||document.querySelector('button[name="Neue Aktivität"]'));
+  const ov=await waitFor(()=>document.querySelector('.cdk-overlay-container'));
+  const tab=await waitFor(()=>[...(ov||document).querySelectorAll('a,button,div,span')].filter(e=>e.children.length===0&&(e.textContent||'').trim()==='Cash'&&e.offsetParent).find(e=>{const r=e.getBoundingClientRect();return r.y>210&&r.y<330;}));
+  if(!tab)return{err:'no dialog cash tab'}; fire(tab);
+  const amt=await waitFor(()=>document.getElementById('inp_tx_amount'),2500); if(!amt)return{err:'cash form not shown'};
+  const trig=[...document.querySelectorAll('button')].find(b=>/^(Gutschrift|Abbuchung|Zinsen)/i.test((b.innerText||'').trim())&&b.offsetParent); if(trig)fire(trig); await sleep(200);
+  const opt=[...document.querySelectorAll('.dropdown-item,[role=menuitem],button,a')].find(o=>TYP.test((o.innerText||'').trim())&&o.offsetParent); if(opt)fire(opt); await sleep(120);
+  const mehr=[...document.querySelectorAll('button,a')].find(b=>/Mehr Optionen/i.test(b.innerText||'')&&b.offsetParent); if(mehr)fire(mehr); await sleep(120);
+  const d=document.getElementById('inp_tx_date'); if(d)set(d,DATE);
+  const c=document.getElementById('inp_tx_comment'); if(c)set(c,CMT);
+  set(amt,''); amt.focus();
+  const t2=[...document.querySelectorAll('button')].find(b=>/^(Gutschrift|Abbuchung|Zinsen)/i.test((b.innerText||'').trim())&&b.offsetParent);
+  return {ok:true, typ:t2&&t2.innerText.trim().split('\n')[0], date:d&&d.value, comment:c&&c.value};
+}
+```
 
 ## Booking a securities transaction
 `[+]` → (Wertpapiere tab is default) → type ISIN into `#inp_investment_search` → click the matching result
