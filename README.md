@@ -41,7 +41,7 @@ Beide Queries werden identisch konfiguriert – **bis auf die Wechselkurse**.
 **Felder (Spalten)** – beim Anlegen der Query je Abschnitt mindestens diese Felder auswählen:
 
 | Feld | Trade-Query | Cash-Query |
-| --- | :---: | :---: |
+| --- | --- | --- |
 | `CurrencyPrimary` | ✓ | ✓ |
 | `FXRateToBase` | ✓ | ✓ |
 | `AssetClass` | ✓ | |
@@ -102,7 +102,7 @@ ExtraETF importiert nur Wertpapier-Transaktionen. Cash-Bewegungen müssen manuel
 
 ### Cash-Bewegungen
 
-Erfasse sie auf ExtraETF über `Neue Aktivität → Cash` (und je Konto „Berücksichtigen" aktivieren, damit Cash zum Gesamtvermögen zählt):
+Erfasse sie auf ExtraETF über `Neue Aktivität → Cash`. Aktiviere beim betroffenen Verrechnungskonto „Berücksichtigen", damit Cash zum Gesamtvermögen zählt.
 
 | Cash-Bewegung | Erfassung |
 | --- | --- |
