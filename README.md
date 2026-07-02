@@ -1,10 +1,14 @@
 # CapTrader → ExtraETF Konverter
 
-Tool zur Konvertierung von CapTrader-Transaktionen (Cash, Trades) in ExtraETF-Import-CSVs.
+Tool zur Konvertierung von CapTrader-Transaktionen (Cash, Trades) in ExtraETF-Import-CSVs. Für alle, die ihr Interactive-Brokers-Depot bei CapTrader in ExtraETF abbilden möchten.
 
-🔒 **Datenschutz:** Läuft vollständig lokal im Browser – kein Server, keine Netzwerkaufrufe, keine Uploads.
+![Der Konverter im Browser](docs/screenshot.png)
 
-⚠️ **Kein offizielles Tool:** Konverter und [Claude-Code-Skill](.claude/skills/extraetf-import-ops/) stehen in keiner Verbindung zu ExtraETF, CapTrader oder Interactive Brokers. Nutzung **ohne Gewähr, auf eigenes Risiko** – erzeugte Importe bitte selbst prüfen.
+> [!NOTE]
+> **Datenschutz:** Läuft vollständig lokal im Browser – kein Server, keine Netzwerkaufrufe, keine Uploads.
+
+> [!WARNING]
+> **Kein offizielles Tool:** Konverter und [Claude-Code-Skill](.claude/skills/extraetf-import-ops/) stehen in keiner Verbindung zu ExtraETF, CapTrader oder Interactive Brokers. Nutzung ohne Gewähr, auf eigenes Risiko – erzeugte Importe bitte selbst prüfen.
 
 ## Warum dieses Tool?
 
@@ -25,18 +29,31 @@ Verlässlicher ist der manuelle Export als Interactive-Brokers-*Flex-Query*-CSV,
 
 ### Flex Queries in CapTrader einrichten
 
-Im CapTrader-/IB-Kundenportal unter Berichte → Flex Queries zwei *Activity Flex Queries* anlegen – eine für Trades, eine für Cash. Zeitraum frei wählbar (gesamte Laufzeit oder pro Jahr; das Tool verarbeitet beliebig viele Dateien).
+Im CapTrader-/IB-Kundenportal unter Berichte → Flex Queries zwei *Activity Flex Queries* anlegen – eine für **Trades**, eine für **Cash** (Abschnitt *Trades* bzw. *Bartransaktionen*). Beide Queries werden identisch konfiguriert – **bis auf die Wechselkurse**.
 
-Für beide Flex Queries identisch:
+**Zustellungskonfiguration**
 
-- Format: CSV, Spaltenüberschriften: Ja
-- Datum `dd/MM/yyyy`, Zeit `HH:mm:ss`
-- Trennzeichen Leerzeichen, Überschrift/Trailer, Titelzeile, Abschnittscode, Prüfpfad, Tages-Aufschlüsselung, Offsetting-/Cancel-Paare: Nein
+| Einstellung | Wert |
+| --- | --- |
+| Format | CSV |
+| Überschrift und Trailer-Daten miteinbeziehen | Nein |
+| Spaltenüberschriften miteinbeziehen | Ja |
+| Einzelne Spalten-Titelzeile anzeigen | Nein |
+| Abschnittscode und Zeilenbeschriftung miteinbeziehen | Nein |
 
-Unterschiede:
+**Allgemeine Konfiguration**
 
-- **Trades:** Abschnitt `Trades`, Wechselkurse Nein
-- **Cash:** Abschnitt `Bartransaktionen`, Wechselkurse Ja
+| Einstellung | Wert |
+| --- | --- |
+| Datumsformat | `dd/MM/yyyy` |
+| Zeitformat | `HH:mm:ss` |
+| Datum/Uhrzeit-Trennzeichen | `' '` (Leerzeichen) |
+| Include Offsetting Trade/Cancel Pairs | Nein |
+| Prüfpfadfelder einbeziehen | Nein |
+| Aufschlüsselung nach Tagen | Nein |
+| **Wechselkurse miteinbeziehen** | Trades → Nein · Cash → Ja |
+
+Übrige Optionen (Modelle, Gewinn und Verlust, Konto-Pseudonym) bleiben auf Standard.
 
 ### Bestand exportieren (optional)
 
@@ -44,11 +61,12 @@ Der *Bestand* für den optionalen Bestandsabgleich wird im Kundenportal aus der 
 
 ## Schnellstart
 
-1. `captrader-to-extraetf.html` im Browser öffnen (Doppelklick genügt – kein Server nötig).
-2. CapTrader-CSVs hineinziehen (Trades + Cash, optional den *Bestand*).
-3. Vorschau und Hinweise prüfen.
-4. „ExtraETF-Import-CSV herunterladen" → `extraetf-import.csv`.
-5. In ExtraETF unter Datenimport → CSV importieren einlesen.
+1. Dieses Repository herunterladen und ggf. entpacken.
+2. `captrader-to-extraetf.html` im Browser öffnen (Doppelklick genügt – kein Server nötig).
+3. CapTrader-CSVs hineinziehen (Trades + Cash, optional den *Bestand*).
+4. Vorschau und Hinweise prüfen.
+5. „ExtraETF-Import-CSV herunterladen" → `extraetf-import.csv`.
+6. In ExtraETF unter Datenimport → CSV importieren einlesen.
 
 ## Manuell nachzupflegen
 
@@ -58,9 +76,12 @@ ExtraETF importiert nur Wertpapier-Transaktionen. Reine Cash-Bewegungen listet d
 - **Anleihe-Kupons:** ExtraETF hat keinen `Kupon`-Typ → als `Dividende` auf die Anleihe buchen (Betrag in „Dividendensumme (vor Steuern)"; Position bleibt unverändert).
 - **Verrechnungskonto:** Kontostand auf den CapTrader-Endbarsaldo abgleichen – dokumentierte Zahlungsströme als Cash-Buchungen, die verbleibende FX-/Rundungsdifferenz als eine Ausgleichsbuchung.
 
-### Automatisierung per Agent & Skill (Nutzung auf eigenes Risiko!)
+## Automatisierung (Agent & Skill)
 
-Diese Nachbuchungen lassen sich mit einem Claude-Code-Agenten und dem Skill [`extraetf-import-ops`](.claude/skills/extraetf-import-ops/) automatisieren: Der Skill kennt die (verifizierten, aber versionsabhängigen) UI-Abläufe der ExtraETF-Web-App, der Agent steuert damit die Oberfläche per Browser-Automation und bucht, was der CSV-Import nicht abdeckt.
+> [!CAUTION]
+> Der Agent bucht in deinem echten ExtraETF-Konto. Nutzung auf eigenes Risiko – Ergebnisse selbst prüfen.
+
+Nachbuchungen lassen sich mit einem Claude-Code-Agenten und dem Skill [`extraetf-import-ops`](.claude/skills/extraetf-import-ops/) automatisieren: Der Skill kennt die (verifizierten, aber versionsabhängigen) UI-Abläufe der ExtraETF-Web-App, der Agent steuert damit die Oberfläche per Browser-Automation und bucht, was der CSV-Import nicht abdeckt.
 
 1. Der Konverter listet unter „Cash / Kontobuchungen" alle nicht-importierbaren Buchungen samt Ziel-Endbarsaldo.
 2. Du meldest dich selbst bei app.extraetf.com an – der Agent hält keine Zugangsdaten.
