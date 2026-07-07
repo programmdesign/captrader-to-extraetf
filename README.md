@@ -5,6 +5,7 @@ Tool zur Konvertierung von Broker-Depot-Exporten in ExtraETF-Import-CSVs. Unters
 
 - **CapTrader** (Interactive Brokers): Flex-Query-Exporte *Trades* + *Cash* · optional *Bestand* für den Positionsabgleich
 - **GenoBroker** (GENO Broker GmbH / Volks- und Raiffeisenbanken): *Depotumsätze*-CSVs · optional *Depotbestand* für den Positionsabgleich
+- **Weltsparen** (Raisin): *Transaktionen*-CSV des Verrechnungskontos (Tages-/Festgeld) → kategorisierte Cash-Buchungslisten (Zinsen, Steuern, Ein-/Auszahlungen)
 
 ![Der Konverter im Browser](docs/screenshot.png)
 
@@ -21,6 +22,8 @@ Tool zur Konvertierung von Broker-Depot-Exporten in ExtraETF-Import-CSVs. Unters
 **CapTrader:** ExtraETF bietet zwar einen Interactive-Brokers-Import über WealthAPI an (auch für CapTrader), doch die Einbindung ist fehleranfällig und die Daten unvollständig – z. B. werden ISINs abgeschnitten. Verlässlicher ist der manuelle Export als *Flex-Query*-CSV, dessen Format aber nicht zum ExtraETF-Import passt. Dieses Tool rechnet die Exporte automatisch um (inklusive Anleihen, Fremdwährung, Quellensteuer, Stornos, Corporate Actions), sodass der importierte Depotwert dem CapTrader-Auszug entspricht.
 
 **GenoBroker:** Für GenoBroker gibt es gar keine ExtraETF-Anbindung, und die *Depotumsatzanzeige*-CSV passt nicht zum Import-Format: Semikolon-Format mit eigenem Kopfblock, nur WKNs statt ISINs, auf 2 Nachkommastellen gerundete Stückzahlen, gerundete Ausführungskurse (bei Sparplänen zählt der abgebuchte Betrag) und Buchungsarten wie Depotüberträge oder Vorabpauschale, die ExtraETF nicht kennt. Dieses Tool übersetzt all das und gleicht auf Wunsch gegen den *Depotbestand* ab, sodass die importierten Positionen exakt dem Depotauszug entsprechen.
+
+**Weltsparen:** Tages- und Festgeld sind keine Wertpapiere – der ExtraETF-CSV-Import kann davon nichts einlesen, alles läuft über manuelle Cash-Buchungen. Der Transaktions-Export des Weltsparen-Verrechnungskontos ist dafür unhandlich: ein einziger Buchungsstrom, in dem sich Ein-/Auszahlungen, interne Umbuchungen zu den Partnerbanken, Zinsgutschriften und Steuerabzüge (nur als AGS/KIST/SOLI-Kürzel im Verwendungszweck) mischen. Dieses Tool sortiert die Buchungen automatisch in genau die Kategorien, die in ExtraETF zu erfassen sind – und filtert die internen Umbuchungen heraus, die man **nicht** buchen darf.
 
 ## Was es kann
 
@@ -47,6 +50,25 @@ Quelle ist der CSV-Export der **Depotumsatzanzeige** (`Depotumsaetze_<Depot>_<Da
 
 > [!IMPORTANT]
 > GenoBroker exportiert nur **WKNs**, keine ISINs. Die WKN wird in die ISIN-Spalte geschrieben – nach dem Import prüfen, ob ExtraETF alle Wertpapiere erkannt hat, und die WKN sonst in der CSV durch die ISIN ersetzen.
+
+### Weltsparen
+
+Quelle ist der CSV-Export der **Transaktionen** des Weltsparen-Verrechnungskontos (`transactions-JJJJ-MM-TT.csv`, auf weltsparen.de unter „Transaktionen“). Da Tages-/Festgeld nicht CSV-importierbar ist, erzeugt der Konverter **keine Import-CSV**, sondern kategorisierte Buchungslisten für die manuelle Erfassung (bzw. den [Agenten](#automatisierung-agent--skill)):
+
+- **Buchungsplan**: eine fertige Liste aller Cash-Buchungen mit Datum, ExtraETF-Typ, Betrag und Kommentar – Einzahlungen (`Gutschrift`), Auszahlungen (`Abbuchung`), Zinsen und Steuern (`Zinsen/Gebühren`), **alles je Jahr aggregiert** und datiert auf die letzte Buchung des Jahres. So bleiben es auch bei jahrelanger Historie nur eine Handvoll Buchungen (ExtraETF kann Cash weder per CSV importieren noch Weltsparen per Auto-Sync anbinden – jede Buchung ist Handarbeit); die Jahresend-Salden stimmen exakt, nur der unterjährige Vermögensverlauf ist geglättet
+- **Zinsen** (Zinsauszahlungen der Festgelder) werden erkannt und je Jahr summiert
+- **Steuern** (Abzüge der Raisin Bank): Abgeltungsteuer, Soli und Kirchensteuer werden aus dem Verwendungszweck (`AGS…`, `SOLI…`, `KIST…`) aufgeschlüsselt und stehen im Jahres-Kommentar; Gebühren gibt es im Export nicht
+- **Interne Umbuchungen** (Verrechnungskonto ↔ Tages-/Festgeld bei den Partnerbanken) werden erkannt und aussortiert – sie dürfen **nicht** gebucht werden, das Geld bleibt ja bei Weltsparen
+- **Überlappende Exporte** werden dedupliziert – einfach alle Transaktions-CSVs zusammen hochladen
+- Als Kontrolle zeigt der Konverter den **Saldo des Verrechnungskontos** laut Export sowie Summen je Kategorie
+
+Empfohlenes Setup in ExtraETF: **ein Depot „Weltsparen“** anlegen, dessen Verrechnungskonto („Berücksichtigen“ aktivieren) den gesamten Weltsparen-Bestand abbildet, und den Buchungsplan abarbeiten. Nach dem Buchen entspricht der Kontostand `Einzahlungen − Auszahlungen + Zinsen − Steuern`.
+
+> [!IMPORTANT]
+> **Tagesgeld-Zinsen** schreibt Weltsparen direkt dem Tagesgeldkonto gut – im Verrechnungskonto-Export tauchen sie nicht separat auf, sondern stecken in Rückzahlungen ohne Verwendungszweck (der Konverter markiert diese). Die Zinshöhe lässt sich je Partnerbank-Konto rekonstruieren (Rückflüsse − Anlagen bei aufgelösten Konten) und wird am besten als `Zinsen`-Buchung im Jahr der Kontoauflösung nachgetragen.
+
+> [!IMPORTANT]
+> **Festgeld-Verlängerungen** laufen nicht über das Verrechnungskonto: Wird ein Festgeld bei Fälligkeit verlängert, wandert Anlagebetrag + Zins direkt in die neue Anlage – im Export fehlt dann die Rückzahlungs-Zeile. Das ist normal; zum Abgleich die Kachel „Noch angelegt (lt. Export)“ mit den echten Weltsparen-Beständen vergleichen.
 
 ## Voraussetzungen
 
@@ -114,6 +136,10 @@ Beides im GenoBroker-Online-Depot, keine Einrichtung nötig:
 - **Depotumsätze** (`Depotumsaetze_<Depot>_<Datum>.csv`): in der *Depotumsatzanzeige* den Zeitraum wählen und als CSV exportieren. Für die **volle Historie seit Depoteröffnung** ggf. mehrere Zeiträume exportieren und alle Dateien zusammen hochladen – Überlappungen sind unkritisch, der Konverter dedupliziert über die Auftrags-Nr.
 - **Depotbestand** (`Depotbestand_<Depot>_<Datum>.csv`, optional, empfohlen): die *Depotbestand*-Ansicht als CSV exportieren. Damit gleicht der Konverter die Positionen exakt ab – wichtig, weil die Umsatzanzeige Stückzahlen auf 2 Nachkommastellen rundet.
 
+### Weltsparen: Transaktionen exportieren
+
+Auf weltsparen.de unter **„Transaktionen“** die Umsätze des Verrechnungskontos als CSV herunterladen (`transactions-JJJJ-MM-TT.csv`), keine Einrichtung nötig. Für die volle Historie ggf. mehrere Zeiträume exportieren – Überlappungen dedupliziert der Konverter.
+
 ## Schnellstart
 
 1. Dieses Repository herunterladen und ggf. entpacken.
@@ -121,9 +147,12 @@ Beides im GenoBroker-Online-Depot, keine Einrichtung nötig:
 3. Die Broker-CSVs hineinziehen – die Bank wird je Datei automatisch erkannt:
    - **CapTrader:** Trades + Cash, optional den *Bestand*
    - **GenoBroker:** alle Depotumsätze-Exporte, optional den *Depotbestand*
+   - **Weltsparen:** alle Transaktionen-Exporte
 4. Vorschau und Hinweise prüfen.
 5. „ExtraETF-Import-CSV herunterladen" → `extraetf-import.csv`.
 6. In ExtraETF unter `Datenimport → CSV importieren` einlesen.
+
+Bei Weltsparen entfallen die Schritte 5–6: Es gibt nichts zu importieren, die Cash-Buchungslisten aus Schritt 4 werden manuell (oder per Agent) in ExtraETF erfasst.
 
 ## Manuell nachzupflegen
 
@@ -142,12 +171,18 @@ Erfasse sie auf ExtraETF über `Neue Aktivität → Cash`. Aktiviere beim betrof
 | Anleihe-Stückzinsen | CapTrader | Cash-Buchung |
 | Anleihe-Kupons | CapTrader | [`Dividende`](#bekannte-extraetf-besonderheiten) |
 | Vorabpauschale | GenoBroker | Cash-Buchung (Abbuchung der Steuer) |
+| Ein-/Auszahlungen | Weltsparen | Cash-Buchung |
+| Zinsen (Tages-/Festgeld) | Weltsparen | Cash-Buchung |
+| Abgeltungsteuer/Soli/Kirchensteuer | Weltsparen | Cash-Buchung |
+| Tagesgeld-Zinsen (im Export versteckt) | Weltsparen | Cash-Buchung bei Kontoauflösung |
 
 ### Verrechnungskonto
 
 **CapTrader:** Kontostand auf den CapTrader-Endbarsaldo abgleichen (dokumentierte Zahlungsströme als Cash-Buchungen, verbleibende FX-/Rundungsdifferenz als eine Ausgleichsbuchung).
 
 **GenoBroker:** Es gibt kein Broker-Verrechnungskonto – Sparplanraten und Abrechnungsbeträge laufen über das hinterlegte Referenzkonto (Girokonto). In ExtraETF daher entweder die Option „Negative Kontostände ausgleichen" aktiv lassen oder die Abbuchungen als Einzahlungen auf das Verrechnungskonto nachbuchen.
+
+**Weltsparen:** Ein Verrechnungskonto je Weltsparen-Konto führen und „Berücksichtigen" aktivieren – es bildet das gesamte Weltsparen-Guthaben ab (Verrechnungskonto + angelegtes Tages-/Festgeld). Gebucht werden nur Einzahlungen, Auszahlungen, Zinsen und Steuern; die internen Umbuchungen zu den Partnerbanken nicht.
 
 ## Automatisierung (Agent & Skill)
 
@@ -171,6 +206,7 @@ Der Konverter erzeugt eine korrekte CSV; die folgenden Punkte liegen an ExtraETF
 - Der **Wechselkurs bei Dividenden** wird ignoriert und der Preis/Steuern in EUR gebucht (*318 HKD → 318 €*). Käufe und Verkäufe werden hingegen korrekt umgerechnet. Workaround: Fremdwährungs-Dividenden in EUR buchen (`Währung=EUR`).
 - Es gibt keinen **`Kupon`-Typ**. Anleihe-Kupons müssen daher z.B. als `Dividende` auf die jeweilige Anleihe gebucht werden (Betrag in „Dividendensumme (vor Steuern)", die Position bleibt unverändert).
 - Nach einem **Split mit ISIN-Wechsel** kann eine Position mit dem veralteten Vor-Split-Kurs bewertet werden. Ursache: Dem Investment ist durch die Kapitalmaßnahme ggf. kein Börsenplatz zugeordnet, daher wird kein aktueller Kurs gezogen. Lösung: Beim Investment über die drei Punkte (⋮) → „Bearbeiten" einen **Börsenplatz** wählen (z. B. Stuttgart) — danach wird der aktuelle Kurs verwendet.
+- **Cash-Zinsen zählen nicht zur Performance:** Performance (Heute, Seit Kauf, IZF), Dividenden und die Seite „Gewinn & Verlust" werden ausschließlich aus **Wertpapier-Transaktionen** berechnet. Cash-Buchungen vom Typ `Zinsen/Gebühren` erhöhen nur den Kontostand/das Gesamtvermögen — ein reines Tages-/Festgeld-Depot zeigt daher trotz gebuchter Zinsen 0 % Rendite. Einen Cash-Buchungstyp `Dividenden` gibt es nicht (nur Gutschrift, Abbuchung, Zinsen/Gebühren, Steuererstattung, Sonstiges); ein sauberer Workaround existiert nicht.
 
 ## Aufbau (neue Bank ergänzen)
 
@@ -180,6 +216,7 @@ Der Code ist in Module je Bank aufgeteilt – alles abhängigkeitsfrei und rein 
 js/core.js                   Shared: CSV-Parser, Zahlen/Datums-Helfer, ExtraETF-Spec, Registry
 js/converters/captrader.js   CapTrader/IB-Konverter
 js/converters/genobroker.js  GenoBroker-Konverter
+js/converters/weltsparen.js  Weltsparen/Raisin-Konverter (nur Cash-Buchungslisten)
 js/app.js                    UI (Upload, Erkennung, Vorschau, Download)
 ```
 

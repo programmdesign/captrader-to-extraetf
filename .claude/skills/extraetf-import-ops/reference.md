@@ -37,7 +37,13 @@ Read `SKILL.md` first for the ground rules and durable method.
 ## Booking a cash entry
 `[+]` (`button[name="Neue Aktivität"]`) opens the dialog on **Wertpapiere**; it closes after each Speichern, so every
 booking reopens it. TYP values: **Gutschrift (+)**, **Abbuchung (−)**, **Zinsen/Gebühren** (signed net: positive
-credit, negative debit; adds a Steuern field), **Steuererstattung**, **Dividenden**.
+credit, negative debit; adds a Steuern field), **Steuererstattung**, **Sonstiges** (NOT "Dividenden" — verified
+2026-07 on a second account; a `/^Dividenden/` TYP matcher hits the page's "Dividendenkalender" nav link and
+navigates away, silently discarding the dialog).
+**Cash income is NOT performance:** Zinsen/Gebühren bookings only move the Verrechnungskonto balance. Performance
+(Heute / Seit Kauf / IZF), Dividenden YTD and the whole Gewinn & Verlust page are computed from SECURITIES
+transactions only — a cash-only portfolio shows 0 everywhere except Cash/Gesamtvermögen (verified 2026-07 on the
+WeltSparen depot). There is no cash type that counts as Ertrag; only a real securities `Dividende` does.
 
 **Fast path — ~2 tool calls/booking (verified 2026-07 over a 28-entry batch):**
 1. **One `browser_evaluate`** (snippet below): fire `+` → wait for `.cdk-overlay-container` → **switch to Cash with a

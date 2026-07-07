@@ -16,6 +16,10 @@ GenoBroker/
 Genobroker/
 genobroker/
 
+# Weltsparen / Raisin exports (input data)
+Weltsparen/
+weltsparen/
+
 # Generated import + helper files
 extraetf-import.csv
 sample-import.csv
